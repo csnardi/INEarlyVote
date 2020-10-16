@@ -1,6 +1,7 @@
 ---
 title: "Indiana Early Voting Statistics"
 output: html_document
+css: font.css
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
