@@ -49,8 +49,6 @@ IN_2020_Returned <- last(IN_2020_Statewide$CumulativeReturnedTOTAL)
 last_updated <- as.Date(last(str_split(Latest_ABS_Comprehensive, "_")[[1]]), "%Y%m%d.csv")
 ```
 ## {.tabset}
-Inspired by [Michael McDonald](https://electproject.github.io/Early-Vote-2020G/index.html).
-
 Updated: `r last_updated`  
 
 Total Early Votes: **`r format(IN_2020_Returned, big.mark =",")`** (**`r percent(IN_2020_Returned / IN_2016_Turnout, 0.1)`** of 2016 turnout)
@@ -169,3 +167,6 @@ IN_Counties %>%
   formatPercentage('percent_requested', 1) %>%
   formatRound(c('NotInPerson','RegisteredVoters'), 0, mark = ",")
 ```
+
+## {-}
+Inspired by [Michael McDonald](https://electproject.github.io/Early-Vote-2020G/index.html). Developed by Chris Nardi. Data from the Indiana Election Division.
