@@ -14,28 +14,28 @@ library(lubridate)
 library(plotly)
 library(hrbrthemes)
 
-IN_2016_Counties_Total <- read_csv("../2016 General/2016 General Election Turnout.csv") %>%
+IN_2016_Counties_Total <- read_csv("../../2016 General/2016 General Election Turnout.csv") %>%
   select(County, Voting2016=Voting, Absentee2016=Absentee)
 
-IN_2016_Counties <- read_csv("../2016 General/ABS_Comprehensive_Tracking_County_Summary_2016.csv") %>%
+IN_2016_Counties <- read_csv("../../2016 General/ABS_Comprehensive_Tracking_County_Summary_2016.csv") %>%
   select(County, InPerson2016=InPerson, ByMail2016=ByMailTotal)
 
-IN_2016_Statewide <- read_excel("../2016 General/ABS_Ballot_Cumulative_Statistics_2016 General.xlsx", skip = 4, .name_repair = "universal") %>%
+IN_2016_Statewide <- read_excel("../../2016 General/ABS_Ballot_Cumulative_Statistics_2016 General.xlsx", skip = 4, .name_repair = "universal") %>%
   filter(Sent...ReceivedDate != "Not Issued") %>%
   mutate(DaysBeforeElection = as.Date("2016-11-08") - as.Date(Sent...ReceivedDate, format="%m/%d/%Y"), Year=2016) %>%
   select(DaysBeforeElection, WalkIn=Walk.in.TOTAL, Mail=Mail.TOTAL, MailReturned=Mailed.Returned.TOTAL, Returned=Cumulative.Returned.TOTAL, Year)
 
-ABS_Cumulative <- file.info(Sys.glob("../2020 General/ABS_Ballot_Cumulative_Statistics_*.csv"))
+ABS_Cumulative <- file.info(Sys.glob("../../2020 General/ABS_Ballot_Cumulative_Statistics_*.csv"))
 Latest_ABS_Cumulative <- row.names(ABS_Cumulative)[which.max(ABS_Cumulative[["ctime"]])]
 IN_2020_Statewide <- read_csv(Latest_ABS_Cumulative) %>%
   filter(`Sent/ReceivedDate` != "Not Issued") %>%
   mutate(DaysBeforeElection = as.Date("2020-11-03") - as.Date(`Sent/ReceivedDate`, format="%m/%d/%y"), Year=2020)
 
-ABS_Comprehensive <- file.info(Sys.glob("../2020 General/ABS_Comprehensive_Tracking_County_Summary_*.csv"))
+ABS_Comprehensive <- file.info(Sys.glob("../../2020 General/ABS_Comprehensive_Tracking_County_Summary_*.csv"))
 Latest_ABS_Comprehensive <- row.names(ABS_Comprehensive)[which.max(ABS_Comprehensive[["ctime"]])]
 IN_2020_Counties <- read_csv(Latest_ABS_Comprehensive)
 
-IN_2020_Registered_Voters <- read_csv("../2020 General/RegistrationByCounty.csv") %>%
+IN_2020_Registered_Voters <- read_csv("../../2020 General/RegistrationByCounty.csv") %>%
   select(County, RegisteredVoters)
 
 IN_Counties <- IN_2020_Counties %>%

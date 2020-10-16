@@ -1,0 +1,7 @@
+name: "Indiana Early Voting"
+output_dir: "docs"
+navbar:
+  title: "Indiana Early Voting"
+  left:
+    - text: "Home"
+      href: index.html
