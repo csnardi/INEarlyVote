@@ -79,7 +79,7 @@ for (i in 1:length(pp$x$data)) {
   pp$x$data[[i]]$name <- str_replace_all(pp$x$data[[i]]$name, c("\\(|\\)" = "", "," = " "))
   pp$x$data[[i]]$legendgroup <- str_replace_all(pp$x$data[[i]]$legendgroup, c("\\(|\\)" = "", "," = " "))
 }
-pp
+partial_bundle(pp)
 ```
 
 ### Total Ballots Cast Early 
