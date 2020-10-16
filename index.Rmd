@@ -103,7 +103,7 @@ IN_Counties %>%
 ```
 
 ### In-person Early Votes
-Hoosiers have cast **`r format(last(pull(IN_2020_Statewide, "Walk-inTOTAL")), big.mark =",")`** in-person early votes.
+Hoosiers have cast **`r format(last(pull(IN_2020_Statewide, "Walk-inTOTAL")), big.mark =",")`** in-person early votes (**`r percent(last(pull(IN_2020_Statewide, "Walk-inTOTAL"))/last(IN_2016_Counties$InPerson2016), accuracy=0.1)`** of all votes cast early in-person in 2016).
 
 ``` {r echo = FALSE}
 IN_Counties <- IN_Counties %>% mutate(percent_early = round(100*(InPerson/InPerson2016), digits = 1))
@@ -141,7 +141,7 @@ IN_Counties %>%
   mutate(NotInPerson=TotalBallots-InPerson) %>%
   select(name, ReceivedNotInPerson, NotInPerson, percent_returned) %>%
   mutate(percent_returned=percent_returned/100) %>%
-  datatable(colnames = c("County", "Votes cast by mail/email/fax/traveling board", "Votes requested by mail/email/fax/traveling board", "% returned"), rownames = F) %>%
+  datatable(colnames = c("County", "Votes cast by mail, email, fax, and traveling board", "Votes requested by mail, email, fax, and traveling board", "% returned"), rownames = F) %>%
   formatPercentage('percent_returned', 1) %>%
   formatRound(c('ReceivedNotInPerson','NotInPerson'), 0, mark = ",")
 ```
@@ -161,12 +161,11 @@ hcmap(map = "countries/us/us-in-all", data = IN_Counties,
 
 ``` {r echo = FALSE}
 IN_Counties %>%
-  mutate(NotInPerson=TotalBallots-InPerson) %>%
-  select(name, NotInPerson, RegisteredVoters, percent_requested) %>%
+  select(name, ByMailTotal, RegisteredVoters, percent_requested) %>%
   mutate(percent_requested=percent_requested/100) %>%
-  datatable(colnames = c("County", "Ballots requested by mail/email/fax/traveling board", "Registered Voters", "% requested"), rownames = F) %>%
+  datatable(colnames = c("County", "Ballots requested by mail", "Registered Voters", "% requested"), rownames = F) %>%
   formatPercentage('percent_requested', 1) %>%
-  formatRound(c('NotInPerson','RegisteredVoters'), 0, mark = ",")
+  formatRound(c('ByMailTotal','RegisteredVoters'), 0, mark = ",")
 ```
 
 ## {-}
