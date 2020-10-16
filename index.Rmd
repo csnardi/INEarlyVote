@@ -1,8 +1,6 @@
 ---
 title: "Indiana Early Voting Statistics"
-output: 
-  html_document: 
-    df_print: paged
+output: html_document
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -106,7 +104,7 @@ IN_Counties %>%
 ```
 
 ### In-person Early Votes
-Indiana voters have cast **`r format(last(pull(IN_2020_Statewide, "Walk-inTOTAL")), big.mark =",")`** in-person early votes.
+Hoosiers have cast **`r format(last(pull(IN_2020_Statewide, "Walk-inTOTAL")), big.mark =",")`** in-person early votes.
 
 ``` {r echo = FALSE}
 IN_Counties <- IN_Counties %>% mutate(percent_early = round(100*(InPerson/InPerson2016), digits = 1))
@@ -128,7 +126,7 @@ IN_Counties %>%
 
 ### Returned Mail Ballots
 
-Indiana voters have cast **`r format(last(IN_2020_Statewide$MailedReturnedTOTAL), big.mark =",")`** mail ballots.
+Hoosiers have cast **`r format(last(IN_2020_Statewide$MailedReturnedTOTAL), big.mark =",")`** ballots by mail, email, fax, or traveling board.
 
 ``` {r echo = FALSE}
 IN_Counties <- IN_Counties %>% mutate(percent_returned = round(100*(ReceivedNotInPerson/(TotalBallots-InPerson)), digits = 1))
@@ -151,7 +149,7 @@ IN_Counties %>%
 
 ### Mail Ballot Requests
 
-Indiana voters have requested **`r format(last(IN_2020_Statewide$MailTOTAL), big.mark =",")`** mail ballots.
+Hoosiers have requested **`r format(last(IN_2020_Statewide$MailTOTAL), big.mark =",")`** mail ballots.
 
 ``` {r echo = FALSE}
 IN_Counties <- IN_Counties %>% mutate(percent_requested = round(100*(ByMailTotal/RegisteredVoters), digits = 1))
