@@ -1,0 +1,173 @@
+---
+title: "Indiana Early Voting Statistics"
+output: 
+  html_document: 
+    df_print: paged
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+library(knitr)
+library(scales)
+library(DT)
+library(highcharter)
+library(lubridate)
+library(plotly)
+library(hrbrthemes)
+
+IN_2016_Counties_Total <- read_csv("../2016 General/2016 General Election Turnout.csv") %>%
+  select(County, Voting2016=Voting, Absentee2016=Absentee)
+
+IN_2016_Counties <- read_csv("../2016 General/ABS_Comprehensive_Tracking_County_Summary_2016.csv") %>%
+  select(County, InPerson2016=InPerson, ByMail2016=ByMailTotal)
+
+IN_2016_Statewide <- read_excel("../2016 General/ABS_Ballot_Cumulative_Statistics_2016 General.xlsx", skip = 4, .name_repair = "universal") %>%
+  filter(Sent...ReceivedDate != "Not Issued") %>%
+  mutate(DaysBeforeElection = as.Date("2016-11-08") - as.Date(Sent...ReceivedDate, format="%m/%d/%Y"), Year=2016) %>%
+  select(DaysBeforeElection, WalkIn=Walk.in.TOTAL, Mail=Mail.TOTAL, MailReturned=Mailed.Returned.TOTAL, Returned=Cumulative.Returned.TOTAL, Year)
+
+ABS_Cumulative <- file.info(Sys.glob("../2020 General/ABS_Ballot_Cumulative_Statistics_*.csv"))
+Latest_ABS_Cumulative <- row.names(ABS_Cumulative)[which.max(ABS_Cumulative[["ctime"]])]
+IN_2020_Statewide <- read_csv(Latest_ABS_Cumulative) %>%
+  filter(`Sent/ReceivedDate` != "Not Issued") %>%
+  mutate(DaysBeforeElection = as.Date("2020-11-03") - as.Date(`Sent/ReceivedDate`, format="%m/%d/%y"), Year=2020)
+
+ABS_Comprehensive <- file.info(Sys.glob("../2020 General/ABS_Comprehensive_Tracking_County_Summary_*.csv"))
+Latest_ABS_Comprehensive <- row.names(ABS_Comprehensive)[which.max(ABS_Comprehensive[["ctime"]])]
+IN_2020_Counties <- read_csv(Latest_ABS_Comprehensive)
+
+IN_2020_Registered_Voters <- read_csv("../2020 General/RegistrationByCounty.csv") %>%
+  select(County, RegisteredVoters)
+
+IN_Counties <- IN_2020_Counties %>%
+  inner_join(IN_2016_Counties_Total) %>%
+  inner_join(IN_2016_Counties) %>%
+  inner_join(IN_2020_Registered_Voters) %>%
+  rename(name=County)
+
+IN_2016_Turnout <- last(IN_2016_Counties_Total$Voting2016)
+IN_2020_Returned <- last(IN_2020_Statewide$CumulativeReturnedTOTAL)
+last_updated <- as.Date(last(str_split(Latest_ABS_Comprehensive, "_")[[1]]), "%Y%m%d.csv")
+```
+## {.tabset}
+Inspired by [Michael McDonald](https://electproject.github.io/Early-Vote-2020G/index.html).
+
+Updated: `r last_updated`  
+
+Total Early Votes: **`r format(IN_2020_Returned, big.mark =",")`** (**`r percent(IN_2020_Returned / IN_2016_Turnout, 0.1)`** of 2016 turnout)
+
+``` {r echo = FALSE, out.width = '100%'}
+IN_Statewide_Stats <- IN_2020_Statewide %>%
+  select(DaysBeforeElection, Returned=CumulativeReturnedTOTAL, WalkIn=`Walk-inTOTAL`, MailReturned=MailedReturnedTOTAL, Year) %>%
+  bind_rows(IN_2016_Statewide) %>%
+  filter(DaysBeforeElection <= 50 & DaysBeforeElection >= 0) %>%
+  mutate(Year=as.factor(Year)) %>%
+  rename("Days before election"="DaysBeforeElection", "total cast" = "Returned", "cast by mail"="MailReturned", "cast in person" = "WalkIn") %>%
+  select(-Mail) %>%
+  pivot_longer(!Year & !`Days before election`, names_to = "type", values_to = "Cast Ballots") %>%
+  mutate(type=fct_rev(type))
+
+statewide_plot <- IN_Statewide_Stats %>%
+  ggplot(aes(x=`Days before election`, y=`Cast Ballots`, color=Year, linetype=type)) +
+  geom_line() +
+  scale_x_reverse() +
+  scale_y_continuous(labels=comma) +
+  theme_ipsum_rc(grid="") +
+  labs(y="Number of ballots cast", linetype="", color="Year and Type") +
+  ggtitle("Indiana early votes in 2016 and 2020")
+
+pp <- ggplotly(statewide_plot) %>% config(responsive=TRUE)
+for (i in 1:length(pp$x$data)) {
+  pp$x$data[[i]]$name <- str_replace_all(pp$x$data[[i]]$name, c("\\(|\\)" = "", "," = " "))
+  pp$x$data[[i]]$legendgroup <- str_replace_all(pp$x$data[[i]]$legendgroup, c("\\(|\\)" = "", "," = " "))
+}
+pp
+```
+
+### Total Ballots Cast Early 
+Hoosiers have cast **`r format(as.numeric(last(IN_2020_Statewide$CumulativeReturnedTOTAL)), big.mark =",")`** votes (**`r percent(last(IN_2020_Statewide$CumulativeReturnedTOTAL)/last(IN_2016_Counties_Total$Absentee2016), accuracy=0.1)`** of all votes cast early in 2016).
+
+``` {r echo = FALSE}
+IN_Counties <- IN_Counties %>% mutate(percent_2016 = round(100*(Received/Voting2016), digits = 1))
+hcmap(map = "countries/us/us-in-all", data = IN_Counties,
+      value = "percent_2016", name = "% of 2016 turnout", joinBy = "name")  %>%
+  hc_title(text ="Early Vote as a Percentage of 2016 Turnout") %>%
+  hc_colorAxis(labels = list(format = "{value}%"))
+```
+
+``` {r echo = FALSE}
+IN_Counties %>%
+  select(name, Received, Voting2016, percent_2016) %>%
+  mutate(percent_2016=percent_2016/100) %>%
+  datatable(colnames = c("County", "Total Votes Cast", "Votes Cast in 2016", "% of 2016 turnout"), rownames = F) %>%
+  formatPercentage('percent_2016', 1) %>%
+  formatRound(c('Received','Voting2016'), 0, mark = ",")
+```
+
+### In-person Early Votes
+Indiana voters have cast **`r format(last(pull(IN_2020_Statewide, "Walk-inTOTAL")), big.mark =",")`** in-person early votes.
+
+``` {r echo = FALSE}
+IN_Counties <- IN_Counties %>% mutate(percent_early = round(100*(InPerson/InPerson2016), digits = 1))
+
+hcmap(map = "countries/us/us-in-all", data = IN_Counties,
+      value = "percent_early", name = "% of 2016 early in-person vote", joinBy = "name")  %>%
+  hc_title(text ="Early In-Person Votes as a Percentage of 2016 Early In-Person Votes") %>%
+  hc_colorAxis(labels = list(format = "{value}%"))
+```
+
+``` {r echo = FALSE}
+IN_Counties %>%
+  select(name, InPerson, InPerson2016, percent_early) %>%
+  mutate(percent_early=percent_early/100) %>%
+  datatable(colnames = c("County", "In-Person Early Votes Cast", "In-Person Early Votes Cast in 2016", "% of 2016 turnout"), rownames = F) %>%
+  formatPercentage('percent_early', 1) %>%
+  formatRound(c('InPerson','InPerson2016'), 0, mark = ",")
+```
+
+### Returned Mail Ballots
+
+Indiana voters have cast **`r format(last(IN_2020_Statewide$MailedReturnedTOTAL), big.mark =",")`** mail ballots.
+
+``` {r echo = FALSE}
+IN_Counties <- IN_Counties %>% mutate(percent_returned = round(100*(ReceivedNotInPerson/(TotalBallots-InPerson)), digits = 1))
+
+hcmap(map = "countries/us/us-in-all", data = IN_Counties,
+      value = "percent_returned", name = "Percent Returned", joinBy = "name") %>%
+  hc_title(text ="Return Rate of Requested Absentee Ballots") %>%
+  hc_colorAxis(labels = list(format = "{value}%"))
+```
+
+``` {r echo = FALSE}
+IN_Counties %>%
+  mutate(NotInPerson=TotalBallots-InPerson) %>%
+  select(name, ReceivedNotInPerson, NotInPerson, percent_returned) %>%
+  mutate(percent_returned=percent_returned/100) %>%
+  datatable(colnames = c("County", "Votes cast by mail/email/fax/traveling board", "Votes requested by mail/email/fax/traveling board", "% returned"), rownames = F) %>%
+  formatPercentage('percent_returned', 1) %>%
+  formatRound(c('ReceivedNotInPerson','NotInPerson'), 0, mark = ",")
+```
+
+### Mail Ballot Requests
+
+Indiana voters have requested **`r format(last(IN_2020_Statewide$MailTOTAL), big.mark =",")`** mail ballots.
+
+``` {r echo = FALSE}
+IN_Counties <- IN_Counties %>% mutate(percent_requested = round(100*(ByMailTotal/RegisteredVoters), digits = 1))
+
+hcmap(map = "countries/us/us-in-all", data = IN_Counties,
+      value = "percent_requested", name = "Percent Requested", joinBy = "name") %>%
+  hc_title(text ="Requested Mail Ballots as a Percentage of Registered Voters") %>%
+  hc_colorAxis(labels = list(format = "{value}%"))
+```
+
+``` {r echo = FALSE}
+IN_Counties %>%
+  mutate(NotInPerson=TotalBallots-InPerson) %>%
+  select(name, NotInPerson, RegisteredVoters, percent_requested) %>%
+  mutate(percent_requested=percent_requested/100) %>%
+  datatable(colnames = c("County", "Ballots requested by mail/email/fax/traveling board", "Registered Voters", "% requested"), rownames = F) %>%
+  formatPercentage('percent_requested', 1) %>%
+  formatRound(c('NotInPerson','RegisteredVoters'), 0, mark = ",")
+```
